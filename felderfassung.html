@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Felderfassung</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+:root {
+  --bg:       #111318;
+  --surf:     #1a1d24;
+  --surf2:    #22262f;
+  --border:   #2e333e;
+  --accent:   #34d399;
+  --adim:     rgba(52,211,153,.15);
+  --warn:     #fbbf24;
+  --wdim:     rgba(251,191,36,.15);
+  --err:      #f87171;
+  --edim:     rgba(248,113,113,.15);
+  --text:     #e2e8f0;
+  --muted:    #64748b;
+  --sans:     'IBM Plex Sans', system-ui, sans-serif;
+  --mono:     'IBM Plex Mono', monospace;
+  --r:        14px;
+  --rs:       10px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  min-height:100dvh;
+  overflow-x:hidden;
+}
+
+/* ── HEADER ── */
+.hdr{
+  background:var(--surf);
+  border-bottom:1px solid var(--border);
+  padding:env(safe-area-inset-top,14px) 16px 12px;
+  padding-top:max(env(safe-area-inset-top),14px);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;top:0;z-index:50;
+}
+.hdr-title{
+  font-family:var(--mono);
+  font-size:15px;
+  font-weight:500;
+  color:var(--accent);
+  letter-spacing:.04em;
+}
+.badge{
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--muted);
+  background:var(--surf2);
+  border:1px solid var(--border);
+  padding:4px 12px;
+  border-radius:20px;
+}
+
+/* ── LAYOUT ── */
+.main{
+  padding:16px 12px calc(100px + env(safe-area-inset-bottom,16px));
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+/* ── SECTION CARDS ── */
+.sec{
+  background:var(--surf);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  overflow:hidden;
+}
+.sec-hdr{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:11px 14px 10px;
+  border-bottom:1px solid var(--border);
+}
+.sec-hdr svg{color:var(--muted);flex-shrink:0}
+.sec-hdr span{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.sec-body{padding:14px}
+
+/* ── BIG BUTTONS (GPS + Camera) ── */
+.big-btn{
+  width:100%;
+  min-height:56px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  border-radius:var(--rs);
+  border:1.5px solid var(--accent);
+  background:var(--adim);
+  color:var(--accent);
+  font-family:var(--sans);
+  font-size:16px;
+  font-weight:500;
+  cursor:pointer;
+  -webkit-appearance:none;
+  transition:opacity .12s,transform .12s;
+}
+.big-btn:active{opacity:.65;transform:scale(.97)}
+.big-btn.state-loading{border-color:var(--warn);background:var(--wdim);color:var(--warn)}
+.big-btn.state-ok{border-color:var(--accent);background:var(--adim);color:var(--accent)}
+.big-btn.state-err{border-color:var(--err);background:var(--edim);color:var(--err)}
+.big-btn.neutral{border-color:var(--border);background:var(--surf2);color:var(--text)}
+
+/* ── NAME INPUT ── */
+.name-input{
+  width:100%;
+  background:var(--surf2);
+  border:1.5px solid var(--border);
+  border-radius:var(--rs);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:16px;
+  padding:12px 14px;
+  outline:none;
+  -webkit-appearance:none;
+  transition:border-color .15s;
+}
+.name-input:focus{border-color:var(--accent)}
+.name-input::placeholder{color:var(--muted)}
+
+/* ── COORDS ROW (single line) ── */
+.crow{
+  display:flex;
+  gap:6px;
+  margin-top:12px;
+  align-items:stretch;
+}
+.cbox{
+  flex:1;
+  background:var(--surf2);
+  border:1px solid var(--border);
+  border-radius:var(--rs);
+  padding:8px 10px;
+  min-width:0;
+}
+.cbox-lbl{
+  font-family:var(--mono);
+  font-size:9px;
+  color:var(--muted);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:2px;
+}
+.cbox-val{
+  font-family:var(--mono);
+  font-size:13px;
+  color:var(--text);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.acc-row{
+  margin-top:8px;
+  font-size:13px;
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.acc-ok{color:var(--accent)}
+.acc-warn{color:var(--warn)}
+
+/* ── PHOTO ── */
+.photo-wrap{
+  width:100%;
+  aspect-ratio:16/9;
+  border-radius:var(--rs);
+  background:var(--surf2);
+  border:1.5px dashed var(--border);
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+}
+.photo-wrap img{width:100%;height:100%;object-fit:cover}
+.photo-ph{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  color:var(--muted);
+  font-size:13px;
+}
+.photo-ph svg{opacity:.35}
+.rm-btn{
+  position:absolute;top:8px;right:8px;
+  width:32px;height:32px;
+  border-radius:50%;
+  background:rgba(0,0,0,.65);
+  border:none;color:#fff;
+  font-size:20px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+#fileInput{display:none}
+
+/* ── CATEGORIES ── */
+.cats{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.cat{
+  flex:1 1 auto;
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--surf2);
+  border:1.5px solid var(--border);
+  border-radius:8px;
+  color:var(--muted);
+  font-size:14px;
+  font-weight:500;
+  cursor:pointer;
+  transition:all .12s;
+  -webkit-appearance:none;
+  white-space:nowrap;
+  padding:0 12px;
+}
+.cat.active{
+  background:var(--adim);
+  border-color:var(--accent);
+  color:var(--accent);
+}
+.cat:active{transform:scale(.95)}
+
+/* ── TEXTAREA ── */
+textarea{
+  width:100%;
+  background:var(--surf2);
+  border:1.5px solid var(--border);
+  border-radius:var(--rs);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.55;
+  padding:12px 14px;
+  resize:none;
+  min-height:90px;
+  outline:none;
+  -webkit-appearance:none;
+  transition:border-color .15s;
+}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--muted)}
+
+/* ── SAVE BAR ── */
+.save-bar{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  background:linear-gradient(to top,var(--bg) 55%,transparent);
+  padding:16px 12px calc(16px + env(safe-area-inset-bottom,0px));
+  z-index:50;
+}
+.save-btn{
+  width:100%;
+  min-height:56px;
+  background:var(--accent);
+  border:none;
+  border-radius:var(--r);
+  color:#0a1a12;
+  font-family:var(--sans);
+  font-size:17px;
+  font-weight:600;
+  letter-spacing:.01em;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  cursor:pointer;
+  -webkit-appearance:none;
+  transition:opacity .12s,transform .12s;
+  box-shadow:0 0 32px rgba(52,211,153,.25);
+}
+.save-btn:active{opacity:.8;transform:scale(.98)}
+
+/* ── RECORDS ── */
+.rec-hdr{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:4px 2px 10px;
+}
+.rec-hdr-lbl{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.exp-btn{
+  min-height:36px;
+  padding:0 14px;
+  background:transparent;
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--muted);
+  font-family:var(--mono);
+  font-size:12px;
+  cursor:pointer;
+  -webkit-appearance:none;
+  transition:opacity .12s;
+}
+.exp-btn:active{opacity:.6}
+
+.ritem{
+  background:var(--surf);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:12px;
+  margin-bottom:10px;
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+}
+.rthumb{
+  width:56px;height:56px;
+  border-radius:8px;
+  flex-shrink:0;
+  overflow:hidden;
+  background:var(--surf2);
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;
+}
+.rthumb img{width:100%;height:100%;object-fit:cover}
+.rmeta{flex:1;min-width:0}
+.rtime{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:3px}
+.rcoord{font-family:var(--mono);font-size:13px;color:var(--accent);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rnote{font-size:14px;color:var(--text);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rcat{display:inline-block;margin-top:5px;font-family:var(--mono);font-size:11px;color:var(--warn);background:var(--wdim);border:1px solid var(--warn);padding:2px 8px;border-radius:4px}
+.rdel{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:2px 4px;flex-shrink:0;line-height:1;min-width:32px;min-height:32px;display:flex;align-items:center;justify-content:center}
+.no-recs{text-align:center;padding:24px;color:var(--muted);font-family:var(--mono);font-size:12px;background:var(--surf);border:1px dashed var(--border);border-radius:var(--r)}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;top:72px;left:50%;
+  transform:translateX(-50%) translateY(-12px);
+  background:var(--surf);
+  border:1px solid var(--border);
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:13px;
+  padding:10px 18px;
+  border-radius:24px;
+  opacity:0;
+  pointer-events:none;
+  z-index:999;
+  white-space:nowrap;
+  transition:all .25s ease;
+  box-shadow:0 4px 20px rgba(0,0,0,.4);
+}
+.toast.ok{border-color:var(--accent);color:var(--accent)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span class="hdr-title">Felderfassung</span>
+  <span class="badge" id="cntBadge">0 Einträge</span>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="main">
+
+  <!-- Name -->
+  <div class="sec">
+    <div class="sec-hdr">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Name / Bezeichnung</span>
+    </div>
+    <div class="sec-body">
+      <input class="name-input" type="text" id="nameText" placeholder="z. B. Messstelle A, Fundort 3 …" autocomplete="off">
+    </div>
+  </div>
+
+  <!-- GPS -->
+  <div class="sec">
+    <div class="sec-hdr">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+      <span>GPS-Koordinaten</span>
+    </div>
+    <div class="sec-body">
+      <button class="big-btn" id="gpsBtn" onclick="getGPS()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/></svg>
+        Standort erfassen
+      </button>
+      <div class="crow" id="cgrid" style="display:none">
+        <div class="cbox"><div class="cbox-lbl">Breite</div><div class="cbox-val" id="latV">—</div></div>
+        <div class="cbox"><div class="cbox-lbl">Länge</div><div class="cbox-val" id="lonV">—</div></div>
+        <div class="cbox"><div class="cbox-lbl">Höhe</div><div class="cbox-val" id="altV">—</div></div>
+        <div class="cbox"><div class="cbox-lbl">±</div><div class="cbox-val" id="accV">—</div></div>
+      </div>
+      <div class="acc-row" id="accRow" style="display:none">
+        <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>
+        <span id="accTxt"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Foto -->
+  <div class="sec">
+    <div class="sec-hdr">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><circle cx="12" cy="14" r="3"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      <span>Foto</span>
+    </div>
+    <div class="sec-body">
+      <button class="big-btn neutral" style="margin-bottom:12px" onclick="document.getElementById('fi').click()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><circle cx="12" cy="14" r="3"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Foto aufnehmen / wählen
+      </button>
+      <input type="file" id="fi" accept="image/*" capture="environment" onchange="handlePhoto(event)">
+      <div class="photo-wrap" id="photoWrap">
+        <div class="photo-ph" id="photoPh">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><circle cx="12" cy="14" r="3"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          Noch kein Foto
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kategorie -->
+  <div class="sec">
+    <div class="sec-hdr">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+      <span>Kategorie</span>
+    </div>
+    <div class="sec-body">
+      <div class="cats">
+        <button class="cat" onclick="selCat(this,'Schaden')">Schaden</button>
+        <button class="cat" onclick="selCat(this,'Wartung')">Wartung</button>
+        <button class="cat" onclick="selCat(this,'Messung')">Messung</button>
+        <button class="cat" onclick="selCat(this,'Fund')">Fund</button>
+        <button class="cat" onclick="selCat(this,'Sonstiges')">Sonstiges</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bemerkung -->
+  <div class="sec">
+    <div class="sec-hdr">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span>Bemerkung</span>
+    </div>
+    <div class="sec-body">
+      <textarea id="noteText" placeholder="Beschreibung, Beobachtung, Hinweise …" rows="4"></textarea>
+    </div>
+  </div>
+
+  <!-- Liste -->
+  <div style="margin-top:4px">
+    <div class="rec-hdr">
+      <span class="rec-hdr-lbl">Gespeicherte Einträge</span>
+      <button class="exp-btn" onclick="exportData()">↓ JSON</button>
+    </div>
+    <div id="recList"></div>
+  </div>
+
+</div>
+
+<!-- Save Bar -->
+<div class="save-bar">
+  <button class="save-btn" onclick="saveRecord()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    Eintrag speichern
+  </button>
+</div>
+
+<script>
+let gCoords=null,gPhoto=null,gCat=null;
+
+function getGPS(){
+  const btn=document.getElementById('gpsBtn');
+  btn.className='big-btn state-loading';
+  btn.innerHTML=`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></svg> Empfange Signal …`;
+  if(!navigator.geolocation){toast('GPS nicht verfügbar','');return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const{latitude:la,longitude:lo,altitude:al,accuracy:ac}=pos.coords;
+    gCoords={lat:la,lon:lo,alt:al,acc:ac,ts:new Date().toISOString()};
+    document.getElementById('latV').textContent=la.toFixed(6);
+    document.getElementById('lonV').textContent=lo.toFixed(6);
+    document.getElementById('altV').textContent=al!=null?Math.round(al)+' m':'—';
+    document.getElementById('accV').textContent=Math.round(ac)+' m';
+    document.getElementById('cgrid').style.display='grid';
+    const row=document.getElementById('accRow'),txt=document.getElementById('accTxt');
+    row.style.display='flex';
+    if(ac<=10) txt.innerHTML=`<span class="acc-ok">Sehr gut (±${Math.round(ac)} m)</span>`;
+    else if(ac<=30) txt.innerHTML=`<span class="acc-ok">Gut (±${Math.round(ac)} m)</span>`;
+    else txt.innerHTML=`<span class="acc-warn">Mäßig (±${Math.round(ac)} m)</span>`;
+    btn.className='big-btn state-ok';
+    btn.innerHTML=`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Aktualisieren`;
+    toast('Standort erfasst','ok');
+  },err=>{
+    btn.className='big-btn state-err';
+    btn.innerHTML=`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Fehler — nochmals tippen`;
+    toast('GPS-Fehler: '+err.message,'');
+  },{enableHighAccuracy:true,timeout:15000});
+}
+
+function handlePhoto(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    gPhoto=ev.target.result;
+    const w=document.getElementById('photoWrap');
+    document.getElementById('photoPh').style.display='none';
+    let img=w.querySelector('img');
+    if(!img){
+      img=document.createElement('img');w.appendChild(img);
+      const rb=document.createElement('button');rb.className='rm-btn';rb.textContent='×';rb.onclick=rmPhoto;w.appendChild(rb);
+    }
+    img.src=gPhoto;
+    toast('Foto hinzugefügt','ok');
+  };r.readAsDataURL(f);
+}
+function rmPhoto(){
+  gPhoto=null;
+  const w=document.getElementById('photoWrap');
+  w.querySelector('img')?.remove();w.querySelector('.rm-btn')?.remove();
+  document.getElementById('photoPh').style.display='flex';
+  document.getElementById('fi').value='';
+}
+
+function selCat(el,cat){
+  document.querySelectorAll('.cat').forEach(b=>b.classList.remove('active'));
+  if(gCat===cat){gCat=null;}else{el.classList.add('active');gCat=cat;}
+}
+
+function saveRecord(){
+  const note=document.getElementById('noteText').value.trim();
+  const name=document.getElementById('nameText').value.trim();
+  if(!gCoords&&!note&&!gPhoto&&!name){toast('Bitte mindestens ein Feld ausfüllen','');return;}
+  const recs=loadRecs();
+  recs.unshift({id:Date.now(),timestamp:new Date().toISOString(),name,coords:gCoords,note,category:gCat,photo:gPhoto});
+  localStorage.setItem('feld_recs',JSON.stringify(recs));
+  // reset
+  gCoords=null;gPhoto=null;gCat=null;
+  document.getElementById('noteText').value='';
+  document.getElementById('nameText').value='';
+  document.getElementById('cgrid').style.display='none';
+  document.getElementById('accRow').style.display='none';
+  document.querySelectorAll('.cat').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('gpsBtn');
+  btn.className='big-btn';
+  btn.innerHTML=`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/></svg> Standort erfassen`;
+  rmPhoto();
+  render();
+  toast('Eintrag gespeichert','ok');
+}
+
+function loadRecs(){try{return JSON.parse(localStorage.getItem('feld_recs')||'[]');}catch{return[];}}
+
+function render(){
+  const recs=loadRecs();
+  document.getElementById('cntBadge').textContent=recs.length+' Eintrag'+(recs.length!==1?'e':'');
+  const list=document.getElementById('recList');
+  if(!recs.length){list.innerHTML='<div class="no-recs">Noch keine Einträge</div>';return;}
+  list.innerHTML=recs.map(r=>{
+    const d=new Date(r.timestamp);
+    const ds=d.toLocaleDateString('de-DE')+' '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    const co=r.coords?r.coords.lat.toFixed(5)+', '+r.coords.lon.toFixed(5):'Keine Koordinaten';
+    const th=r.photo?`<div class="rthumb"><img src="${r.photo}" alt=""></div>`:`<div class="rthumb">📷</div>`;
+    const ct=r.category?`<span class="rcat">${r.category}</span>`:'';
+    const nm=r.name?`<div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:2px">${esc(r.name)}</div>`:'';
+    return`<div class="ritem">${th}<div class="rmeta">${nm}<div class="rtime">${ds}</div><div class="rcoord">${co}</div>${r.note?`<div class="rnote">${esc(r.note)}</div>`:''}${ct}</div><button class="rdel" onclick="delRec(${r.id})">×</button></div>`;
+  }).join('');
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function delRec(id){
+  if(!confirm('Eintrag löschen?'))return;
+  localStorage.setItem('feld_recs',JSON.stringify(loadRecs().filter(r=>r.id!==id)));
+  render();toast('Gelöscht','');
+}
+
+function exportData(){
+  const recs=loadRecs();
+  if(!recs.length){toast('Keine Einträge','');return;}
+  const out=recs.map(r=>({id:r.id,timestamp:r.timestamp,name:r.name||null,latitude:r.coords?.lat??null,longitude:r.coords?.lon??null,altitude_m:r.coords?.alt??null,accuracy_m:r.coords?.acc??null,category:r.category,note:r.note,has_photo:!!r.photo,photo_base64:r.photo||null}));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}));
+  a.download='felderfassung_'+new Date().toISOString().slice(0,19).replace(/[:.]/g,'-')+'.json';
+  a.click();
+  toast(recs.length+' Einträge exportiert','ok');
+}
+
+function toast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast'+(type==='ok'?' ok':'');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
+  clearTimeout(t._to);t._to=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+render();
+</script>
+</body>
+</html>
