@@ -166,7 +166,7 @@ body{
 }
 .cbox-val{
   font-family:var(--mono);
-  font-size:13px;
+  font-size:11px;
   color:var(--text);
   white-space:nowrap;
   overflow:hidden;
@@ -415,10 +415,10 @@ textarea::placeholder{color:var(--muted)}
         Standort erfassen
       </button>
       <div class="crow" id="cgrid" style="display:none">
-        <div class="cbox"><div class="cbox-lbl">Breite</div><div class="cbox-val" id="latV">—</div></div>
-        <div class="cbox"><div class="cbox-lbl">Länge</div><div class="cbox-val" id="lonV">—</div></div>
-        <div class="cbox"><div class="cbox-lbl">Höhe</div><div class="cbox-val" id="altV">—</div></div>
-        <div class="cbox"><div class="cbox-lbl">±</div><div class="cbox-val" id="accV">—</div></div>
+        <div class="cbox" style="flex:3"><div class="cbox-lbl">Breite</div><div class="cbox-val" id="latV">—</div></div>
+        <div class="cbox" style="flex:3"><div class="cbox-lbl">Länge</div><div class="cbox-val" id="lonV">—</div></div>
+        <div class="cbox" style="flex:2"><div class="cbox-lbl">Höhe</div><div class="cbox-val" id="altV">—</div></div>
+        <div class="cbox" style="flex:2"><div class="cbox-lbl">±</div><div class="cbox-val" id="accV">—</div></div>
       </div>
       <div class="acc-row" id="accRow" style="display:none">
         <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>
@@ -506,8 +506,8 @@ function getGPS(){
   navigator.geolocation.getCurrentPosition(pos=>{
     const{latitude:la,longitude:lo,altitude:al,accuracy:ac}=pos.coords;
     gCoords={lat:la,lon:lo,alt:al,acc:ac,ts:new Date().toISOString()};
-    document.getElementById('latV').textContent=la.toFixed(6);
-    document.getElementById('lonV').textContent=lo.toFixed(6);
+    document.getElementById('latV').textContent=la.toFixed(5);
+    document.getElementById('lonV').textContent=lo.toFixed(5);
     document.getElementById('altV').textContent=al!=null?Math.round(al)+' m':'—';
     document.getElementById('accV').textContent=Math.round(ac)+' m';
     document.getElementById('cgrid').style.display='grid';
